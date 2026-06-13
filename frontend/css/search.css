@@ -1,0 +1,77 @@
+ .search-page-bar {
+   padding: 12px 16px 8px;
+ }
+ 
+ .search-results {
+   padding: 0 16px 80px;
+ }
+ 
+ .search-result-item {
+   padding: 14px 0;
+   border-bottom: 1px solid var(--border-color);
+ }
+ 
+ .search-result-item .result-title {
+   font-size: 17px;
+   font-weight: 600;
+   color: var(--text-color);
+ }
+ 
+ .search-result-item .result-author {
+   font-size: 13px;
+   color: var(--text-secondary);
+   margin-top: 2px;
+ }
+ 
+ .search-result-item .result-sources {
+   display: flex;
+   flex-wrap: wrap;
+   gap: 6px;
+   margin-top: 8px;
+ }
+ 
+ .source-tag {
+   display: inline-block;
+   padding: 4px 10px;
+   border-radius: 6px;
+   font-size: 12px;
+   cursor: pointer;
+   border: 1px solid var(--border-color);
+   color: var(--text-color);
+   background: var(--card-bg);
+ }
+ 
+ .source-tag.online {
+   border-color: var(--accent);
+   color: var(--accent);
+ }
+ 
+ .source-tag.offline {
+   color: var(--text-secondary);
+   text-decoration: line-through;
+ }
+ 
+ .result-actions {
+   margin-top: 8px;
+   display: flex;
+   gap: 8px;
+ }
+ 
+ .result-actions button {
+   padding: 6px 14px;
+   border: none;
+   border-radius: 6px;
+   font-size: 13px;
+   cursor: pointer;
+ }
+ 
+ .btn-read {
+   background: var(--accent);
+   color: #fff;
+ }
+ 
+ .btn-shelf {
+   background: transparent;
+   color: var(--accent);
+   border: 1px solid var(--accent) !important;
+ }

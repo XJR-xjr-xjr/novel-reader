@@ -1,0 +1,34 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+   <title>搜索 - 小说浏览器</title>
+   <link rel="stylesheet" href="css/theme.css">
+   <link rel="stylesheet" href="css/style.css">
+   <link rel="stylesheet" href="css/search.css">
+ </head>
+ <body>
+   <div id="page-search" class="page">
+     <div class="header">
+       <button class="back-btn" id="search-back">←</button>
+       <h1>搜索</h1>
+     </div>
+     <div class="search-page-bar">
+       <div class="search-bar">
+         <input type="text" id="search-page-input" placeholder="输入小说名..." autofocus autocomplete="off">
+         <button class="search-btn" id="search-page-btn">搜索</button>
+       </div>
+     </div>
+     <div id="search-results" class="search-results"></div>
+     <div id="search-empty" class="empty-state" style="display:none">
+       <p>输入小说名开始搜索</p>
+     </div>
+   </div>
+ 
+   <script src="js/utils.js"></script>
+   <script src="js/db.js"></script>
+   <script src="js/api.js"></script>
+   <script src="js/search.js"></script>
+ </body>
+ </html>

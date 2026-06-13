@@ -1,0 +1,136 @@
+ * {
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+   -webkit-tap-highlight-color: transparent;
+ }
+ 
+ body {
+   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', sans-serif;
+   background: var(--bg-color);
+   color: var(--text-color);
+   line-height: 1.6;
+   overflow-x: hidden;
+ }
+ 
+ .page {
+   display: none;
+   min-height: 100vh;
+ }
+ 
+ .page.active {
+   display: block;
+ }
+ 
+ /* Header */
+ .header {
+   position: sticky;
+   top: 0;
+   z-index: 100;
+   background: var(--card-bg);
+   border-bottom: 1px solid var(--border-color);
+   padding: 12px 16px;
+ }
+ 
+ .header h1 {
+   font-size: 18px;
+   font-weight: 600;
+ }
+ 
+ /* Search bar */
+ .search-bar {
+   display: flex;
+   align-items: center;
+   background: var(--card-bg);
+   border: 1px solid var(--border-color);
+   border-radius: 10px;
+   padding: 4px 12px;
+   margin-bottom: 12px;
+ }
+ 
+ .search-bar input {
+   flex: 1;
+   border: none;
+   outline: none;
+   background: transparent;
+   font-size: 16px;
+   padding: 10px 0;
+   color: var(--text-color);
+ }
+ 
+ .search-bar input::placeholder {
+   color: var(--text-secondary);
+ }
+ 
+ .search-bar .search-btn {
+   background: var(--accent);
+   color: #fff;
+   border: none;
+   border-radius: 8px;
+   padding: 8px 16px;
+   font-size: 14px;
+   cursor: pointer;
+ }
+ 
+ /* Loading spinner */
+ .spinner {
+   text-align: center;
+   padding: 40px;
+   color: var(--text-secondary);
+ }
+ 
+ .spinner::after {
+   content: '';
+   display: inline-block;
+   width: 24px;
+   height: 24px;
+   border: 3px solid var(--border-color);
+   border-top-color: var(--accent);
+   border-radius: 50%;
+   animation: spin 0.8s linear infinite;
+   vertical-align: middle;
+   margin-left: 8px;
+ }
+ 
+ @keyframes spin {
+   to { transform: rotate(360deg); }
+ }
+ 
+ /* Empty state */
+ .empty-state {
+   text-align: center;
+   padding: 60px 20px;
+   color: var(--text-secondary);
+ }
+ 
+ .empty-state p {
+   font-size: 15px;
+   margin-top: 8px;
+ }
+ 
+ /* Pull to refresh / swipe hint */
+ .swipe-hint {
+   position: absolute;
+   right: 16px;
+   top: 50%;
+   transform: translateY(-50%);
+   color: var(--danger);
+   font-size: 13px;
+   opacity: 0;
+   transition: opacity 0.2s;
+ }
+ 
+ .swipe-hint.show {
+   opacity: 1;
+ }
+ 
+ /* Back button */
+ .back-btn {
+   background: none;
+   border: none;
+   font-size: 20px;
+   color: var(--accent);
+   cursor: pointer;
+   padding: 4px 8px;
+   margin-right: 8px;
+ }

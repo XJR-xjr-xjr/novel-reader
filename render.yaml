@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: novel-reader
+    env: docker
+    region: singapore
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: PORT
+        value: 8080

@@ -1,0 +1,10 @@
+ {
+   "name": "小说浏览器",
+   "short_name": "小说",
+   "start_url": "/",
+   "display": "standalone",
+   "background_color": "#f5f5f0",
+   "theme_color": "#3a3a3a",
+   "orientation": "portrait",
+   "lang": "zh-CN"
+ }

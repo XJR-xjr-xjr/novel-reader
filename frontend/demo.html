@@ -1,0 +1,44 @@
+ <!DOCTYPE html>
+ <html lang='zh-CN'>
+ <head>
+   <meta charset='UTF-8'>
+   <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+   <title>阅读演示 - 小说浏览器</title>
+   <link rel='stylesheet' href='css/theme.css'>
+   <link rel='stylesheet' href='css/reader.css'>
+   <style>
+     .reader-bar { opacity: 1; pointer-events: auto; }
+   </style>
+ </head>
+ <body>
+   <div id='reader-topbar' class='reader-bar reader-topbar' style='opacity:1;pointer-events:auto'>
+     <button class='reader-bar-btn' onclick='history.back()'>←</button>
+     <span class='reader-bar-title'>凡人修仙传</span>
+     <button class='reader-bar-btn'>☰</button>
+   </div>
+   <div id='reader-wrapper' class='page-mode' style='padding-top:56px;padding-bottom:80px'>
+     <div id='reader-content' style='font-size:18px'>
+       <h2>第37章·青竹蜂云剑</h2>
+       <p>韩立深吸一口气，体内心法运转，手中的青色小瓶散发出淡淡的灵光。这瓶子是他从一个古修士的洞府中偶然得到的，里面似乎蕴藏着一股神秘的力量。</p>
+       <p>他盘膝坐在洞府中，将青色小瓶放在身前，双手结印，口中念念有词。随着法力的催动，小瓶中的灵光越来越盛，逐渐弥漫了整个洞府。</p>
+       <p>韩立心中一动，感觉体内的法力正在以一种奇异的方式运转。他不敢怠慢，连忙收敛心神，专心致志地引导着这股力量。</p>
+       <p>时间一分一秒地过去，洞府中的灵光渐渐收敛，最终全部没入了韩立的体内。他长长吐出一口气，睁开双眼，眼中闪过一丝精光。</p>
+       <p>"想不到这青色小瓶竟有如此妙用，"韩立喃喃自语，"有了它，我的修炼速度至少能提升三成。"</p>
+       <p>他将小瓶小心收好，站起身来，走出洞府。外面阳光明媚，山风习习，远处的山峦连绵起伏，一派仙家气象。</p>
+       <p>"是时候去参加那个交易会了，"韩立自语道，"听说这次有不少珍稀材料出现，说不定能找到我需要的东西。"</p>
+       <p>他身形一闪，化作一道遁光，向着天边飞去。</p>
+       <p style='text-align:center;color:var(--text-secondary);margin-top:2em'>── 第37章完 ──</p>
+     </div>
+   </div>
+   <div id='reader-bottombar' class='reader-bar reader-bottombar' style='opacity:1;pointer-events:auto'>
+     <div class='reader-bottom-row'>
+       <span id='reader-chapter-info'>第37章 / 1284章</span>
+       <span id='reader-progress-pct'>3%</span>
+     </div>
+     <div id='reader-progress-track'>
+       <div id='reader-progress-fill' style='width:3%'></div>
+     </div>
+     <input type='range' id='reader-progress-slider' min='1' max='1284' value='37' style='width:100%'>
+   </div>
+ </body>
+ </html>

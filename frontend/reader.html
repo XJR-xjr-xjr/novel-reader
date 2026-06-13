@@ -1,0 +1,85 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+   <meta name="apple-mobile-web-app-capable" content="yes">
+   <title>阅读 - 小说浏览器</title>
+   <link rel="stylesheet" href="css/theme.css">
+   <link rel="stylesheet" href="css/reader.css">
+ </head>
+ <body>
+   <!-- 顶栏 -->
+   <div id="reader-topbar" class="reader-bar reader-topbar">
+     <button class="reader-bar-btn" id="reader-back">←</button>
+     <span id="reader-title" class="reader-bar-title"></span>
+     <button class="reader-bar-btn" id="reader-menu">☰</button>
+   </div>
+ 
+   <!-- 阅读内容区域 -->
+   <div id="reader-wrapper">
+     <div id="reader-content"></div>
+   </div>
+ 
+   <!-- 底栏 -->
+   <div id="reader-bottombar" class="reader-bar reader-bottombar">
+     <div class="reader-bottom-row">
+       <span id="reader-chapter-info"></span>
+       <span id="reader-progress-pct">0%</span>
+     </div>
+     <div id="reader-progress-track">
+       <div id="reader-progress-fill"></div>
+     </div>
+     <input type="range" id="reader-progress-slider" min="1" max="100" value="1">
+   </div>
+ 
+   <!-- 设置面板（从底部滑出） -->
+   <div id="reader-settings">
+     <div class="settings-section">
+       <button id="settings-theme" class="settings-btn">☀ 日间</button>
+     </div>
+     <div class="settings-section">
+       <span class="settings-label">字体</span>
+       <button id="font-decrease" class="settings-btn">A-</button>
+       <span id="font-size-display">18</span>
+       <button id="font-increase" class="settings-btn">A+</button>
+     </div>
+     <div class="settings-section">
+       <span class="settings-label">模式</span>
+       <button id="mode-page" class="settings-btn active">翻页</button>
+       <button id="mode-scroll" class="settings-btn">滚动</button>
+     </div>
+     <div class="settings-section">
+       <button id="reader-tts" class="settings-btn">🔊 听书模式</button>
+     </div>
+   </div>
+ 
+   <!-- 侧边栏（右侧滑出） -->
+   <div id="reader-sidebar">
+     <div class="sidebar-tabs">
+       <span class="sidebar-tab active" data-tab="toc">目录</span>
+       <span class="sidebar-tab" data-tab="bookmarks">书签</span>
+     </div>
+     <div id="sidebar-toc" class="sidebar-list"></div>
+     <div id="sidebar-bookmarks" class="sidebar-list" style="display:none"></div>
+   </div>
+ 
+   <!-- 遮罩层 -->
+   <div id="reader-overlay"></div>
+ 
+   <!-- TTS 控制栏 -->
+   <div id="tts-controls" class="tts-controls" style="display:none">
+     <button id="tts-play">▶</button>
+     <span id="tts-status">播放中</span>
+     <input type="range" id="tts-rate" min="5" max="15" value="10">
+     <span class="tts-rate-label">语速</span>
+   </div>
+ 
+   <script src="js/utils.js"></script>
+   <script src="js/db.js"></script>
+   <script src="js/api.js"></script>
+   <script src="js/cache.js"></script>
+   <script src="js/tts.js"></script>
+   <script src="js/reader.js"></script>
+ </body>
+ </html>
