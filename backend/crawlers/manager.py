@@ -8,7 +8,10 @@ class CrawlerManager:
 
     def __init__(self):
         self._crawlers: list[CrawlerBase] = [
-            BiqugeCrawler("https://www.biquge.com"),
+            BiqugeCrawler("https://www.biquge.cc"),
+            BiqugeCrawler("https://www.xbiquge.net"),
+            BiqugeCrawler("https://www.biquge.info"),
+            BiqugeCrawler("https://www.69shu.com"),
         ]
 
     async def search_all(self, keyword: str) -> list[SearchResult]:
@@ -18,7 +21,7 @@ class CrawlerManager:
         novel_map: dict[str, SearchResult] = {}
         for crawler, result in zip(self._crawlers, results):
             if isinstance(result, Exception):
-                print(f"[Manager] {crawler.site_name} failed: {result}")
+                print(f"[Manager] skip: {crawler._base_url}")
                 continue
             for item in result:
                 key = f"{item.title}|{item.author}"
