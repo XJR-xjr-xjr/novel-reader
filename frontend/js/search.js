@@ -1,5 +1,36 @@
  const Search = {
+  // === 搜索记录 ===
+  _historyKey: 'novel_search_history',
+
+  _addHistory(keyword) {
+    let hist = [];
+    try { hist = JSON.parse(localStorage.getItem(this._historyKey) || '[]'); } catch(e) {}
+    hist = hist.filter(h => h !== keyword);
+    hist.unshift(keyword);
+    hist = hist.slice(0, 10);
+    localStorage.setItem(this._historyKey, JSON.stringify(hist));
+    this._renderHistory();
+  },
+
+  _renderHistory() {
+    let cont = document.getElementById('search-history');
+    if (!cont) return;
+    let hist = [];
+    try { hist = JSON.parse(localStorage.getItem(this._historyKey) || '[]'); } catch(e) {}
+    if (hist.length === 0) { cont.style.display = 'none'; return; }
+    cont.style.display = '';
+    cont.innerHTML = '<div class="history-title">最近搜索</div>' +
+      hist.map(function(h){ return '<div class="history-item">' + Utils.escapeHtml(h) + '</div>'; }).join('');
+    var self = this;
+    cont.querySelectorAll('.history-item').forEach(function(el){
+      el.addEventListener('click', function(){
+        document.getElementById('search-page-input').value = el.textContent;
+        self.doSearch(el.textContent);
+      });
+    });
+  },
    async init() {
+    this._renderHistory();
      const input = document.getElementById('search-page-input');
      const btn = document.getElementById('search-page-btn');
      const back = document.getElementById('search-back');
@@ -9,7 +40,7 @@
      // 从 URL 读取初始搜索词
      const params = new URLSearchParams(window.location.search);
      const q = params.get('q');
-     if (q) {
+     if (q) { this._addHistory(q);
        input.value = q;
        this.doSearch(q);
      }
