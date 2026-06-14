@@ -10,16 +10,14 @@ def clean_html(html: str) -> str:
                       'svg', 'form', 'button']):
         tag.decompose()
 
-    ad_patterns = re.compile(
-        r'(广告|推广|推荐阅读|本章未完|点击下一页|手机用户请访问)',
-        re.IGNORECASE
-    )
+    # Only filter obvious ads, NOT content-hint text
+    ad_patterns = re.compile(r'(广告|推广|推荐阅读)', re.IGNORECASE)
 
     text = soup.get_text(separator='\n')
     lines = []
     for line in text.split('\n'):
         line = line.strip()
-        if line and not ad_patterns.search(line) and len(line) > 2:
+        if line and not ad_patterns.search(line) and len(line) > 1:
             lines.append(line)
 
     return '\n'.join(lines)
