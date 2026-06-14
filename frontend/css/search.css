@@ -75,3 +75,11 @@
    color: var(--accent);
    border: 1px solid var(--accent) !important;
  }
+
+/* Search history */
+.search-history { padding: 8px 16px; }
+.history-title { font-size: 12px; color: var(--text-secondary); padding: 4px 0 8px; }
+.history-item { padding: 10px 12px; font-size: 14px; color: var(--text-color);
+  border-bottom: 1px solid var(--border-color); cursor: pointer; }
+.history-item:last-child { border-bottom: none; }
+.history-item:hover { background: var(--card-bg); }
