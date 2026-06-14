@@ -1,6 +1,6 @@
 var Reader = {
   bookId: null, book: null, chapters: [], ci: 1, tc: 0,
-  fontSize: 18, mode: 'scroll', hideTimer: null,
+  fontSize: 18, mode: 'scroll', hideTimer: null, isLoadingNext: false,
 
   async init() {
     this.bookId = parseInt(new URLSearchParams(location.search).get('id'));
@@ -12,7 +12,7 @@ var Reader = {
     document.getElementById('reader-title').textContent = this.book.title;
     this._applyFont(); this._applyMode(); this._updateThemeBtn();
     try { this.chapters = await API.getChapters(this.book.currentSource); this.tc = this.chapters.length; }
-    catch (e) { return this._err('获取目录失败，请检查网络'); }
+    catch (e) { return this._err('获取目录失败'); }
     this.ci = this.book.currentChapterIndex || 1;
     if (this.ci > this.tc) this.ci = this.tc;
     await this._loadChapter(this.ci);
@@ -22,24 +22,39 @@ var Reader = {
   _err: function(m) { document.getElementById('reader-content').innerHTML =
     '<p style="text-align:center;margin-top:40vh;color:var(--text-secondary)">' + m + '</p>'; },
 
-  async _loadChapter(idx) {
-    if (idx < 1 || idx > this.tc) return;
-    this.ci = idx;
+  async _loadChapter(idx, append) {
+    if (idx < 1 || idx > this.tc || (append && this.isLoadingNext)) return;
+    if (append) this.isLoadingNext = true;
+    var self = this;
     var ch = this.chapters[idx - 1]; if (!ch) return;
-    var content; var cached = await Cache.getChapter(this.bookId, idx);
+
+    var content;
+    var cached = await Cache.getChapter(this.bookId, idx);
     if (cached) { content = cached.content; }
     else {
       try { var d = await API.getChapterContent(ch.url); content = d.content;
         await DB.setCache(this.bookId + '_' + idx, { title: ch.title, content: content }); }
-      catch (e) { return this._err('加载章节失败'); }
+      catch (e) { this.isLoadingNext = false; return; }
     }
+
+    // Render
     var ps = content.split('\n').map(function(p){return p.trim()}).filter(function(p){return p});
-    var h = '<h2>' + Utils.escapeHtml(ch.title) + '</h2>' +
+    if (ps.length === 0) { this.isLoadingNext = false; return; }
+
+    var html = '<h2>' + Utils.escapeHtml(ch.title) + '</h2>' +
       ps.map(function(p){return '<p>' + Utils.escapeHtml(p) + '</p>'}).join('');
-    document.getElementById('reader-content').innerHTML = h;
-    document.getElementById('reader-wrapper').scrollTop = 0;
+
+    if (append) {
+      document.getElementById('reader-content').insertAdjacentHTML('beforeend', html);
+      this.isLoadingNext = false;
+    } else {
+      document.getElementById('reader-content').innerHTML = html;
+      document.getElementById('reader-wrapper').scrollTop = 0;
+      Cache.preloadChapters(this.bookId, this.chapters, idx + 1);
+    }
+
+    this.ci = idx;
     this._updateUI(); this._updateTOC(); this._updateBM();
-    Cache.preloadChapters(this.bookId, this.chapters, idx + 1);
     await this._save();
   },
 
@@ -59,10 +74,8 @@ var Reader = {
   },
 
   _updateUI: function() {
-    document.getElementById('reader-chapter-info').textContent =
-      '第' + this.ci + '章 / ' + this.tc + '章';
-    var pct = this.tc > 0 ? this.ci / this.tc : 0;
-    document.getElementById('reader-progress-pct').textContent = Math.round(pct * 100) + '%';
+    document.getElementById('reader-chapter-info').textContent = '第' + this.ci + '章 / ' + this.tc + '章';
+    document.getElementById('reader-progress-pct').textContent = Math.round((this.tc>0?this.ci/this.tc:0)*100) + '%';
   },
 
   _updateTOC: function() {
@@ -100,13 +113,7 @@ var Reader = {
     this.book.totalChapters = this.tc;
     this.book.progress = this.tc > 0 ? this.ci / this.tc : 0;
     this.book.lastReadAt = Date.now();
-    try {
-      await DB.updateBook(this.book);
-    } catch(e) {
-      console.error('Save failed:', e);
-      // Retry once
-      try { await new Promise(function(r){setTimeout(r,500)}); await DB.updateBook(this.book); } catch(e2) {}
-    }
+    try { await DB.updateBook(this.book); } catch(e) {}
   },
 
   _showBars: function() {
@@ -141,10 +148,27 @@ var Reader = {
     else { w.classList.remove('page-mode'); }
     document.getElementById('btn-mode').textContent = this.mode === 'page' ? '📖' : '📜';
     localStorage.setItem('readerMode', this.mode);
+    this._setupScrollWatch();
   },
   _updateThemeBtn: function() {
     var t = document.documentElement.getAttribute('data-theme') || 'day';
     document.getElementById('btn-theme').textContent = t === 'night' ? '🌙' : '☀';
+  },
+
+  // Continuous scroll: auto-load next chapter
+  _setupScrollWatch: function() {
+    var self = this;
+    var wrapper = document.getElementById('reader-wrapper');
+    // Remove old listener
+    wrapper._scrollHandler && wrapper.removeEventListener('scroll', wrapper._scrollHandler);
+    if (this.mode !== 'scroll') return;
+    wrapper._scrollHandler = function() {
+      var distFromBot = wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight;
+      if (distFromBot < 300 && !self.isLoadingNext && self.ci < self.tc) {
+        self._loadChapter(self.ci + 1, true);
+      }
+    };
+    wrapper.addEventListener('scroll', wrapper._scrollHandler);
   },
 
   _bind: function() {
@@ -181,7 +205,7 @@ var Reader = {
 
     document.getElementById('tts-play').addEventListener('click', function(){ TTS.toggle(); });
     document.getElementById('tts-rate').addEventListener('input', function(e){
-      if (TTS._utterance) TTS._utterance.rate = parseFloat(e.target.value);
+      if (TTS._utterance) TTS._utterance.rate = parseFloat(e.target.value) / 10;
     });
     document.getElementById('tts-stop').addEventListener('click', function(){ TTS.stop(); });
 
@@ -200,6 +224,8 @@ var Reader = {
         else { self._startTimer(); }
       }
     });
+
+    this._setupScrollWatch();
 
     document.querySelectorAll('.sidebar-tab').forEach(function(tab){
       tab.addEventListener('click', function(){
