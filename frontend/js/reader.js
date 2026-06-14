@@ -159,16 +159,20 @@ var Reader = {
   _setupScrollWatch: function() {
     var self = this;
     var wrapper = document.getElementById('reader-wrapper');
-    // Remove old listener
     wrapper._scrollHandler && wrapper.removeEventListener('scroll', wrapper._scrollHandler);
+    window._readerScroll && window.removeEventListener('scroll', window._readerScroll);
+    document.body._readerScroll && document.body.removeEventListener('scroll', document.body._readerScroll);
     if (this.mode !== 'scroll') return;
-    wrapper._scrollHandler = function() {
-      var distFromBot = wrapper.scrollHeight - wrapper.scrollTop - wrapper.clientHeight;
-      if (distFromBot < 300 && !self.isLoadingNext && self.ci < self.tc) {
+    var handler = function() {
+      var dist = document.documentElement.scrollHeight - window.scrollY - window.innerHeight;
+      if (dist < 500 && !self.isLoadingNext && self.ci < self.tc) {
         self._loadChapter(self.ci + 1, true);
       }
     };
-    wrapper.addEventListener('scroll', wrapper._scrollHandler);
+    window._readerScroll = handler;
+    window.addEventListener('scroll', handler, {passive: true});
+    document.body._readerScroll = handler;
+    document.body.addEventListener('scroll', handler, {passive: true});
   },
 
   _bind: function() {
