@@ -27,26 +27,26 @@ class BiqugeCrawler(CrawlerBase):
         return await self._search_ddg(keyword)
 
     async def _search_site(self, keyword: str) -> list[SearchResult]:
-        """多格式尝试搜索站点"""
         results = []
         try_urls = [
             f"{self._base_url}/search.html?searchkey={keyword}",
             f"{self._base_url}/search?keyword={keyword}",
             f"{self._base_url}/modules/article/search.php?searchkey={keyword}",
-            f"{self._base_url}/s?q={keyword}",
         ]
+        seen = set()
         for url in try_urls:
             try:
                 async with httpx.AsyncClient(timeout=12, follow_redirects=True) as cl:
                     r = await cl.get(url, headers={"User-Agent": UA})
                     if r.status_code != 200: continue
                     soup = BeautifulSoup(r.text, 'lxml')
-                    items = soup.select('a[href*="/book/"], a[href*="/novel/"], a[href*="/info/"]')
-                    for a in items:
+                    for a in soup.select('a[href*="/book/"], a[href*="/novel/"], a[href*="/info/"]'):
                         t = a.get_text().strip()
                         h = a.get('href', '')
-                        if len(t) < 2 or keyword not in t: continue
+                        if len(t) < 2: continue
                         u = h if h.startswith('http') else self._base_url + h
+                        if u in seen: continue
+                        seen.add(u)
                         results.append(SearchResult(
                             title=t, author="",
                             sources=[SourceInfo(site_name=self._name, site_url=u, status="online")]))
@@ -56,7 +56,6 @@ class BiqugeCrawler(CrawlerBase):
         return results
 
     async def _search_ddg(self, keyword: str) -> list[SearchResult]:
-        """DuckDuckGo 全网搜索"""
         results = []
         try:
             q = f"{keyword} 小说 免费 在线阅读"
@@ -69,7 +68,6 @@ class BiqugeCrawler(CrawlerBase):
                     href = link.get('href', '')
                     text = link.get_text().strip()
                     if not href or not text or len(text) < 4: continue
-                    if keyword not in text: continue
                     domain = re.search(r'https?://([^/]+)', href)
                     site = domain.group(1) if domain else "未知站"
                     results.append(SearchResult(
@@ -80,23 +78,35 @@ class BiqugeCrawler(CrawlerBase):
         return results
 
     async def get_chapters(self, novel_url: str) -> list[Chapter]:
+        """获取目录 - 多格式解析"""
         chapters = []
         try:
             async with httpx.AsyncClient(timeout=15, follow_redirects=True) as cl:
                 r = await cl.get(novel_url, headers={"User-Agent": UA})
                 if r.status_code != 200: return chapters
                 soup = BeautifulSoup(r.text, 'lxml')
-                dd = (soup.select('dd a, .chapterlist a, div#list a, .listmain a') or
-                      soup.select('a[href*=".html"]'))
-                for i, a in enumerate(dd, 1):
-                    h = a.get('href', ''); t = a.get_text().strip()
-                    if not t or not h: continue
-                    u = (h if h.startswith('http') else
-                         self._base_url + h if h.startswith('/') else
-                         novel_url.rsplit('/', 1)[0] + '/' + h)
-                    chapters.append(Chapter(index=i, title=t, url=u))
-        except Exception:
-            pass
+
+                # 尝试所有可能的章节链接选择器
+                for sel in ['dd a', 'ul.chapter-list a', '.chapter a', '#list a',
+                            '.listmain a', '.chapterlist a', 'div#list dt ~ dd a',
+                            'a[href*=".html"]']:
+                    links = soup.select(sel)
+                    if links:
+                        for i, a in enumerate(links, 1):
+                            h = a.get('href', ''); t = a.get_text().strip()
+                            if not t or not h or len(t) < 2: continue
+                            if h.startswith('http'):
+                                u = h
+                            elif h.startswith('/'):
+                                u = f"{self._base_url}{h}"
+                            elif h.startswith('javascript'):
+                                continue
+                            else:
+                                u = novel_url.rsplit('/', 1)[0] + '/' + h
+                            chapters.append(Chapter(index=i, title=t, url=u))
+                        if chapters: return chapters
+        except Exception as e:
+            print(f"[{self._name}] chapters error: {e}")
         return chapters
 
     async def get_content(self, chapter_url: str) -> ChapterContent:
@@ -107,12 +117,14 @@ class BiqugeCrawler(CrawlerBase):
                 soup = BeautifulSoup(r.text, 'lxml')
                 tag = soup.find('h1') or soup.find('title')
                 title = tag.get_text().strip() if tag else ""
-                div = (soup.find('div', id='content') or soup.find('div', id='booktxt') or
-                       soup.find('div', class_='content') or soup.find('div', class_='showtxt') or
-                       soup.find('div', id='chaptercontent') or soup.find('article') or
-                       soup.find('div', id='TextContent'))
-                raw = str(div) if div else r.text
-                content = clean_html(raw)
+                for sel in ['div#content', 'div#booktxt', 'div.content',
+                            'div.showtxt', 'div#chaptercontent', 'article',
+                            'div#TextContent']:
+                    div = soup.select_one(sel)
+                    if div:
+                        content = clean_html(str(div))
+                        return ChapterContent(title=title, content=content)
+                content = clean_html(r.text)
                 return ChapterContent(title=title, content=content)
         except Exception:
             return ChapterContent(title="", content="")
