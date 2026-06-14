@@ -1,11 +1,10 @@
-import os, pathlib
+import os, pathlib, json, asyncio
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from routers import search, novel, chapter
 
 app = FastAPI(title="小说浏览器 API", version="1.0.0")
-
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 app.include_router(search.router, prefix="/api", tags=["搜索"])
 app.include_router(novel.router, prefix="/api", tags=["小说"])
@@ -14,16 +13,23 @@ app.include_router(chapter.router, prefix="/api", tags=["章节"])
 @app.get("/api/health")
 async def health(): return {"status": "ok"}
 
-@app.get("/api/debug-html")
-async def debug_html(url: str = Query(...)):
-    """调试：返回目标 URL 的原始 HTML"""
-    import httpx
-    try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as c:
-            r = await c.get(url, headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15"})
-            return PlainTextResponse(r.text[:50000], media_type="text/plain; charset=utf-8")
-    except Exception as e:
-        return {"error": str(e)}
+@app.get("/api/chapter/stream")
+async def stream_content(url: str = Query(...)):
+    """SSE 流式返回章节内容 - 逐页推送"""
+    from scrapling_fetcher import fetch_chapter_stream
+
+    async def generate():
+        try:
+            for chunk in fetch_chapter_stream(url):
+                data = json.dumps(chunk, ensure_ascii=False)
+                yield f"data: {data}\n\n"
+                await asyncio.sleep(0.1)
+        except Exception as e:
+            yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream",
+                            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 FRONTEND_DIR = pathlib.Path(__file__).parent / "frontend"
 if FRONTEND_DIR.is_dir():
