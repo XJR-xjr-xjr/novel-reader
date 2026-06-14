@@ -8,7 +8,8 @@ var TTS = {
     var self = this;
     this._utterance = new SpeechSynthesisUtterance(text);
     this._utterance.lang = 'zh-CN';
-    this._utterance.rate = parseFloat(document.getElementById('tts-rate').value);
+    // Divider: slider value / 10 = rate (10 -> 1.0 normal speed)
+    this._utterance.rate = parseFloat(document.getElementById('tts-rate').value) / 10;
 
     this._utterance.onstart = function() {
       self._isPlaying = true;
