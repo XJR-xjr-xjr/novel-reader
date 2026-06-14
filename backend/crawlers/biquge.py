@@ -1,5 +1,6 @@
 import re
 import httpx
+from urllib.parse import urlparse, urljoin
 from bs4 import BeautifulSoup
 from crawlers.base import CrawlerBase
 from models.schemas import SearchResult, SourceInfo, Chapter, ChapterContent
@@ -20,18 +21,20 @@ class BiqugeCrawler(CrawlerBase):
     def site_name(self) -> str:
         return self._name
 
+    def _real_base(self, url: str) -> str:
+        """从 URL 中提取真实的站点根域名"""
+        p = urlparse(url)
+        return f"{p.scheme}://{p.netloc}"
+
     async def search(self, keyword: str) -> list[SearchResult]:
         results = await self._search_site(keyword)
-        if results:
-            return results
+        if results: return results
         return await self._search_ddg(keyword)
 
     async def _search_site(self, keyword: str) -> list[SearchResult]:
         results = []
         try_urls = [
             f"{self._base_url}/search.html?searchkey={keyword}",
-            f"{self._base_url}/search?keyword={keyword}",
-            f"{self._base_url}/modules/article/search.php?searchkey={keyword}",
         ]
         seen = set()
         for url in try_urls:
@@ -44,7 +47,7 @@ class BiqugeCrawler(CrawlerBase):
                         t = a.get_text().strip()
                         h = a.get('href', '')
                         if len(t) < 2: continue
-                        u = h if h.startswith('http') else self._base_url + h
+                        u = urljoin(self._base_url, h)
                         if u in seen: continue
                         seen.add(u)
                         results.append(SearchResult(
@@ -71,38 +74,32 @@ class BiqugeCrawler(CrawlerBase):
                     domain = re.search(r'https?://([^/]+)', href)
                     site = domain.group(1) if domain else "未知站"
                     results.append(SearchResult(
-                        title=f"{site} - {text[:40]}", author="",
+                        title=f"{site} {text[:40]}", author="",
                         sources=[SourceInfo(site_name=site, site_url=href, status="online")]))
         except Exception:
             pass
         return results
 
     async def get_chapters(self, novel_url: str) -> list[Chapter]:
-        """获取目录 - 多格式解析"""
+        """获取目录 - 提取真实域名来解析链接"""
         chapters = []
+        real_base = self._real_base(novel_url)
         try:
             async with httpx.AsyncClient(timeout=15, follow_redirects=True) as cl:
                 r = await cl.get(novel_url, headers={"User-Agent": UA})
                 if r.status_code != 200: return chapters
                 soup = BeautifulSoup(r.text, 'lxml')
 
-                # 尝试所有可能的章节链接选择器
-                for sel in ['dd a', 'ul.chapter-list a', '.chapter a', '#list a',
+                for sel in ['dd a', '.chapter a', '#list a',
                             '.listmain a', '.chapterlist a', 'div#list dt ~ dd a',
-                            'a[href*=".html"]']:
+                            'a[href*=".html"]', 'ul.chapterlist li a']:
                     links = soup.select(sel)
                     if links:
                         for i, a in enumerate(links, 1):
                             h = a.get('href', ''); t = a.get_text().strip()
                             if not t or not h or len(t) < 2: continue
-                            if h.startswith('http'):
-                                u = h
-                            elif h.startswith('/'):
-                                u = f"{self._base_url}{h}"
-                            elif h.startswith('javascript'):
-                                continue
-                            else:
-                                u = novel_url.rsplit('/', 1)[0] + '/' + h
+                            if h.startswith('javascript') or h == '#': continue
+                            u = urljoin(real_base, h)
                             chapters.append(Chapter(index=i, title=t, url=u))
                         if chapters: return chapters
         except Exception as e:
@@ -119,7 +116,8 @@ class BiqugeCrawler(CrawlerBase):
                 title = tag.get_text().strip() if tag else ""
                 for sel in ['div#content', 'div#booktxt', 'div.content',
                             'div.showtxt', 'div#chaptercontent', 'article',
-                            'div#TextContent']:
+                            'div#TextContent', 'div#htmlContent',
+                            '.chapter-content', '#chapter-content']:
                     div = soup.select_one(sel)
                     if div:
                         content = clean_html(str(div))
