@@ -29,9 +29,29 @@ async def health_check():
     return {"status": "ok"}
 
 
-# 生产环境：服务前端静态文件
-FRONTEND_DIR = pathlib.Path(__file__).parent / "frontend"
+@app.get("/api/debug")
+async def debug_search():
+    """诊断每个站点的连通性"""
+    import httpx
+    results = {}
+    sites = [
+        "https://www.biquge.cc",
+        "https://www.xbiquge.net",
+        "https://www.biquge.info",
+    ]
+    for site in sites:
+        try:
+            async with httpx.AsyncClient(timeout=10) as c:
+                r = await c.get(site, headers={
+                    "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15"
+                })
+                results[site] = f"HTTP {r.status_code} ({len(r.text)} bytes)"
+        except Exception as e:
+            results[site] = f"FAIL: {str(e)[:120]}"
+    return results
 
+
+FRONTEND_DIR = pathlib.Path(__file__).parent / "frontend"
 if FRONTEND_DIR.is_dir():
     @app.get("/{path:path}")
     async def serve_frontend(path: str):
@@ -48,7 +68,3 @@ else:
     @app.get("/{path:path}")
     async def catch_all(path: str):
         return JSONResponse({"detail": "Not Found"}, status_code=404)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8080")))
