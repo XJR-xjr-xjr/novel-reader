@@ -1,5 +1,6 @@
 import asyncio, re
 import httpx
+from bs4 import BeautifulSoup
 from crawlers.base import CrawlerBase
 from crawlers.biquge import BiqugeCrawler
 from models.schemas import SearchResult, Chapter, ChapterContent
@@ -7,6 +8,11 @@ from models.schemas import SearchResult, Chapter, ChapterContent
 CLOUDFLARE_SIGNS = [re.compile(p, re.I) for p in [
     r'cloudflare', r'cf-browser-verify', r'_cf_chl_opt',
     r'Just a moment', r'cf-ray', r'cf-cache-status'
+]]
+
+NOVEL_MARKERS = [re.compile(p) for p in [
+    r'第[一二三四五六七八九十百千万\d]+章', r'目录', r'章节列表',
+    r'book', r'novel', r'小说', r'免费阅读'
 ]]
 
 class CrawlerManager:
@@ -19,15 +25,29 @@ class CrawlerManager:
         self._fallback = BiqugeCrawler("https://generic")
 
     async def _has_cloudflare(self, url: str) -> bool:
-        """Fast 2-second check for Cloudflare"""
         try:
             async with httpx.AsyncClient(timeout=2.0, follow_redirects=True) as c:
                 r = await c.get(url, headers={"User-Agent": "Mozilla/5.0"})
                 body = r.text[:1000]
                 for p in CLOUDFLARE_SIGNS:
                     if p.search(body): return True
-        except Exception:
-            return False
+        except Exception: return False
+        return False
+
+    async def _is_novel_page(self, url: str) -> bool:
+        """Quick check if URL looks like a novel page"""
+        try:
+            async with httpx.AsyncClient(timeout=3.0, follow_redirects=True) as c:
+                r = await c.get(url, headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15"})
+                if r.status_code != 200: return False
+                soup = BeautifulSoup(r.text[:5000], 'lxml')
+                text = soup.get_text()
+                # Must have Chinese characters and at least one novel marker
+                has_chinese = len(re.findall(r'[\u4e00-\u9fff]', text))
+                if has_chinese < 50: return False
+                for p in NOVEL_MARKERS:
+                    if p.search(text): return True
+        except Exception: return False
         return False
 
     async def search_all(self, keyword: str) -> list[SearchResult]:
@@ -48,15 +68,18 @@ class CrawlerManager:
                             novel_map[key].sources.append(src)
 
         final = list(novel_map.values())
-        # Quick CF check: remove Cloudflare results
+        # Filter: remove Cloudflare + non-novel pages
         clean = []
         for novel in final:
-            ok_sources = []
+            ok = []
             for src in novel.sources:
-                if not await self._has_cloudflare(src.site_url):
-                    ok_sources.append(src)
-            if ok_sources:
-                novel.sources = ok_sources
+                if await self._has_cloudflare(src.site_url):
+                    continue
+                if not await self._is_novel_page(src.site_url):
+                    continue
+                ok.append(src)
+            if ok:
+                novel.sources = ok
                 clean.append(novel)
         return clean
 
