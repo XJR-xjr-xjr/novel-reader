@@ -19,7 +19,7 @@ var Reader = {
     this._bind(); this._showBars(); this._startTimer();
   },
 
-  _err(m) { document.getElementById('reader-content').innerHTML =
+  _err: function(m) { document.getElementById('reader-content').innerHTML =
     '<p style="text-align:center;margin-top:40vh;color:var(--text-secondary)">' + m + '</p>'; },
 
   async _loadChapter(idx) {
@@ -100,7 +100,13 @@ var Reader = {
     this.book.totalChapters = this.tc;
     this.book.progress = this.tc > 0 ? this.ci / this.tc : 0;
     this.book.lastReadAt = Date.now();
-    try { await DB.updateBook(this.book); } catch(e) {}
+    try {
+      await DB.updateBook(this.book);
+    } catch(e) {
+      console.error('Save failed:', e);
+      // Retry once
+      try { await new Promise(function(r){setTimeout(r,500)}); await DB.updateBook(this.book); } catch(e2) {}
+    }
   },
 
   _showBars: function() {
@@ -137,35 +143,27 @@ var Reader = {
     localStorage.setItem('readerMode', this.mode);
   },
   _updateThemeBtn: function() {
-    var theme = document.documentElement.getAttribute('data-theme') || 'day';
-    document.getElementById('btn-theme').textContent = theme === 'night' ? '🌙' : '☀';
+    var t = document.documentElement.getAttribute('data-theme') || 'day';
+    document.getElementById('btn-theme').textContent = t === 'night' ? '🌙' : '☀';
   },
 
   _bind: function() {
     var self = this;
 
-    // 返回 - 保存进度后再走
     document.getElementById('reader-back').addEventListener('click', function(){
       self._save().then(function(){ window.location.href = 'index.html'; });
     });
-
-    // 侧边栏
     document.getElementById('reader-menu').addEventListener('click', function(){ self._openSidebar(); });
     document.getElementById('reader-overlay').addEventListener('click', function(){ self._closeSidebar(); });
 
-    // 上/下一章
     document.getElementById('btn-prev').addEventListener('click', function(){ self.prev(); self._startTimer(); });
     document.getElementById('btn-next').addEventListener('click', function(){ self.next(); self._startTimer(); });
-
-    // 字体
     document.getElementById('btn-font-down').addEventListener('click', function(){
       if (self.fontSize > 14) { self.fontSize--; self._applyFont(); }
     });
     document.getElementById('btn-font-up').addEventListener('click', function(){
       if (self.fontSize < 32) { self.fontSize++; self._applyFont(); }
     });
-
-    // 主题
     document.getElementById('btn-theme').addEventListener('click', function(){
       var cur = document.documentElement.getAttribute('data-theme');
       var nxt = cur === 'night' ? '' : 'night';
@@ -173,35 +171,26 @@ var Reader = {
       else { document.documentElement.removeAttribute('data-theme'); localStorage.removeItem('theme'); }
       self._updateThemeBtn();
     });
-
-    // 翻页/滚动
     document.getElementById('btn-mode').addEventListener('click', function(){
-      self.mode = self.mode === 'page' ? 'scroll' : 'page';
-      self._applyMode();
+      self.mode = self.mode === 'page' ? 'scroll' : 'page'; self._applyMode();
     });
-
-    // TTS
     document.getElementById('btn-tts').addEventListener('click', function(){
       var txt = document.getElementById('reader-content').textContent;
-      TTS.speak(txt);
+      if (txt) TTS.speak(txt);
     });
 
-    // TTS controls
     document.getElementById('tts-play').addEventListener('click', function(){ TTS.toggle(); });
     document.getElementById('tts-rate').addEventListener('input', function(e){
       if (TTS._utterance) TTS._utterance.rate = parseFloat(e.target.value);
     });
-    document.getElementById('tts-stop').addEventListener('click', function(){
-      TTS.stop(); document.getElementById('tts-row').style.display = 'none';
-    });
+    document.getElementById('tts-stop').addEventListener('click', function(){ TTS.stop(); });
 
-    // 点击阅读区
     document.getElementById('reader-wrapper').addEventListener('click', function(e){
       if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') return;
-      var visible = document.getElementById('reader-topbar').classList.contains('visible');
+      var vis = document.getElementById('reader-topbar').classList.contains('visible');
       var rect = e.currentTarget.getBoundingClientRect();
       var x = e.clientX, w = rect.width, third = w / 3;
-      if (!visible) {
+      if (!vis) {
         if (self.mode === 'page') {
           if (x < third) { self.pageUp(); } else if (x > w - third) { self.pageDown(); }
           else { self._showBars(); self._startTimer(); }
@@ -212,7 +201,6 @@ var Reader = {
       }
     });
 
-    // 侧边栏标签
     document.querySelectorAll('.sidebar-tab').forEach(function(tab){
       tab.addEventListener('click', function(){
         document.querySelectorAll('.sidebar-tab').forEach(function(el){el.classList.remove('active')});
@@ -223,11 +211,8 @@ var Reader = {
       });
     });
 
-    // 书签选择
     document.addEventListener('mouseup', function(){ self._select(); });
     document.addEventListener('touchend', function(){ setTimeout(function(){ self._select(); }, 200); });
-
-    // 保存进度
     window.addEventListener('beforeunload', function(){ self._save(); });
     window.addEventListener('pagehide', function(){ self._save(); });
   },
@@ -244,26 +229,6 @@ var Reader = {
     }
     sel.removeAllRanges();
   }
-};
-
-// TTS 适配
-TTS.speak = function(text) {
-  TTS.origSpeak(text);
-  document.getElementById('tts-row').style.display = 'flex';
-  document.getElementById('tts-play').textContent = '⏸';
-  document.getElementById('tts-status') && (document.getElementById('tts-status').textContent = '朗读中...');
-};
-TTS.stop = function() {
-  window.speechSynthesis.cancel();
-  this._isPlaying = false;
-  document.getElementById('tts-play').textContent = '▶';
-  document.getElementById('tts-row').style.display = 'none';
-};
-TTS.toggle = function() {
-  if (this._isPlaying) { window.speechSynthesis.pause(); this._isPlaying = false;
-    document.getElementById('tts-play').textContent = '▶'; }
-  else if (window.speechSynthesis.speaking) { window.speechSynthesis.resume(); this._isPlaying = true;
-    document.getElementById('tts-play').textContent = '⏸'; }
 };
 
 document.addEventListener('DOMContentLoaded', function(){ Reader.init(); });
