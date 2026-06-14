@@ -20,33 +20,26 @@
   </div>
 
   <div id="reader-bottombar" class="reader-bar reader-bottombar">
-    <div class="reader-bottom-row">
+    <div class="bar-row">
+      <button id="btn-prev" class="bar-btn">◀ 上一章</button>
+      <button id="btn-next" class="bar-btn">下一章 ▶</button>
+    </div>
+    <div class="bar-row bar-mid">
+      <button id="btn-font-down" class="bar-btn-sm">A−</button>
+      <span class="bar-label">18</span>
+      <button id="btn-font-up" class="bar-btn-sm">A+</button>
+      <button id="btn-theme" class="bar-btn-sm">☀</button>
+      <button id="btn-mode" class="bar-btn-sm">📜</button>
+      <button id="btn-tts" class="bar-btn-sm">🔊</button>
+    </div>
+    <div id="tts-row" class="bar-row" style="display:none">
+      <button id="tts-play" class="bar-btn-sm">▶</button>
+      <input type="range" id="tts-rate" min="3" max="18" value="10" class="bar-slider">
+      <button id="tts-stop" class="bar-btn-sm">✕ 关闭</button>
+    </div>
+    <div class="bar-row">
       <span id="reader-chapter-info"></span>
       <span id="reader-progress-pct">0%</span>
-    </div>
-    <div id="reader-progress-track">
-      <div id="reader-progress-fill"></div>
-    </div>
-    <input type="range" id="reader-progress-slider" min="1" max="100" value="1">
-  </div>
-
-  <div id="reader-settings">
-    <div class="settings-section">
-      <button id="settings-theme" class="settings-btn">☀ 日间</button>
-    </div>
-    <div class="settings-section">
-      <span class="settings-label">字体</span>
-      <button id="font-decrease" class="settings-btn">A-</button>
-      <span id="font-size-display">18</span>
-      <button id="font-increase" class="settings-btn">A+</button>
-    </div>
-    <div class="settings-section">
-      <span class="settings-label">模式</span>
-      <button id="mode-page" class="settings-btn active">翻页</button>
-      <button id="mode-scroll" class="settings-btn">滚动</button>
-    </div>
-    <div class="settings-section">
-      <button id="reader-tts" class="settings-btn">🔊 听书模式</button>
     </div>
   </div>
 
@@ -60,13 +53,6 @@
   </div>
 
   <div id="reader-overlay"></div>
-
-  <div id="tts-controls" class="tts-controls" style="display:none">
-    <button id="tts-play">▶</button>
-    <span id="tts-status">播放中</span>
-    <input type="range" id="tts-rate" min="5" max="15" value="10">
-    <span class="tts-rate-label">语速</span>
-  </div>
 
   <script src="js/utils.js"></script>
   <script src="js/db.js"></script>
